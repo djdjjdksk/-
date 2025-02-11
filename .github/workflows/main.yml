@@ -1,0 +1,32 @@
+name: Download Kali Tools and Package as .deb
+
+on:
+  workflow_dispatch:  # يمكن تشغيله يدويًا
+
+jobs:
+  download-kali-tools:
+    runs-on: ubuntu-latest  # استخدام بيئة أوبونتو لأنها تدعم apt
+
+    steps:
+      - name: إعداد بيئة كالي لينكس
+        run: |
+          echo "deb http://http.kali.org/kali kali-rolling main non-free contrib" | sudo tee /etc/apt/sources.list
+          sudo apt update
+          sudo apt install -y dpkg-dev
+
+      - name: تنزيل جميع أدوات كالي
+        run: |
+          mkdir -p kali-debs
+          tools_list=$(apt list --installed 2>/dev/null | grep kali | cut -d/ -f1)
+          for tool in $tools_list; do
+            apt download $tool -y && mv *.deb kali-debs/
+          done
+
+      - name: ضغط الملفات
+        run: tar -czvf kali-tools.tar.gz kali-debs
+
+      - name: رفع الملفات كـ Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kali-tools
+          path: kali-tools.tar.gz
