@@ -1,0 +1,44 @@
+name: Download Kali Tools Individually
+
+on:
+  workflow_dispatch:  # يمكن تشغيله يدويًا
+
+jobs:
+  download-kali-tools:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: إعداد بيئة كالي لينكس
+        run: |
+          sudo apt install -y gnupg curl
+          sudo mkdir -p /etc/apt/keyrings
+          
+          # تحميل مفتاح GPG وإضافته إلى النظام
+          curl -fsSL https://archive.kali.org/archive-key.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/kali-archive-keyring.gpg > /dev/null
+          
+          # إضافة مستودعات كالي لينكس
+          echo "deb [signed-by=/etc/apt/keyrings/kali-archive-keyring.gpg] http://http.kali.org/kali kali-rolling main non-free contrib" | sudo tee /etc/apt/sources.list
+          
+          # تحديث المستودعات
+          sudo apt update
+          sudo apt install -y dpkg-dev
+
+      - name: تنزيل كل أداة وحفظها في مجلد منفصل
+        run: |
+          mkdir -p kali-debs
+          tools_list=$(apt list 2>/dev/null | grep kali | cut -d/ -f1)
+          
+          for tool in $tools_list; do
+            echo "🔹 تحميل الأداة: $tool"
+            mkdir -p kali-debs/$tool
+            apt download $tool -y && mv *.deb kali-debs/$tool/
+          done
+
+      - name: ضغط الملفات
+        run: tar -czvf kali-tools.tar.gz kali-debs
+
+      - name: رفع الملفات كـ Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kali-tools
+          path: kali-tools.tar.gz
