@@ -26,7 +26,7 @@ jobs:
         run: tar -czvf kali-tools.tar.gz kali-debs
 
       - name: رفع الملفات كـ Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kali-tools
           path: kali-tools.tar.gz
